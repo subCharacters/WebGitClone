@@ -1,10 +1,12 @@
 package com.example.webgitclone.controller;
 
+import com.example.webgitclone.service.GitCloneService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -17,6 +19,9 @@ class GitCloneControllerTest {
     @Autowired
     private MockMvc mockMvc; // 가짜 HTTP 요청을 만들어주는 테스트 도구
 
+    @MockitoBean
+    private GitCloneService gitCloneService;
+
     @Test
     @DisplayName("브랜치명이 비어있으면 에러 메시지를 반환")
     void gitClone_BranchNameMissing_Test() throws Exception {
@@ -28,9 +33,9 @@ class GitCloneControllerTest {
                 , "https://github.com/example".getBytes() // 파일 내용
         );
         mockMvc.perform(multipart("/clone") // 파일 업로드가 포함된 HTTP 요청 방식
-                .file(file)
-                .param("branch", "")
-                .param("targetDir", "C:\\Users\\example"))
+                        .file(file)
+                        .param("branch", "")
+                        .param("targetDir", "C:\\Users\\example"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("clone"))
                 .andExpect(model().attribute("error", "브랜치 명을 입력해주세요."))
@@ -39,7 +44,7 @@ class GitCloneControllerTest {
 
     @Test
     @DisplayName("txt파일이 없는 경우 에러 메시지를 반환")
-    void gitClone_FileParameterMissing_Test() throws Exception{
+    void gitClone_FileParameterMissing_Test() throws Exception {
         mockMvc.perform(multipart("/clone")
                         .param("targetDir", "C:\\Users\\example")
                         .param("branch", "master"))
@@ -51,7 +56,7 @@ class GitCloneControllerTest {
 
     @Test
     @DisplayName("txt파일이 비어있는 경우 에러 메시지를 반환")
-    void gitClone_FileEmpty_Test() throws Exception{
+    void gitClone_FileEmpty_Test() throws Exception {
         MockMultipartFile emptyFile = new MockMultipartFile(
                 "file", "empty.txt", "text/plain", new byte[0] // 0바이트
         );
@@ -67,7 +72,7 @@ class GitCloneControllerTest {
 
     @Test
     @DisplayName("txt가 아닐경우 에러 메시지를 반환")
-    void gitClone_FileExtensionMissing_Test() throws Exception{
+    void gitClone_FileExtensionMissing_Test() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file"
                 , "repos.csv"
@@ -75,9 +80,9 @@ class GitCloneControllerTest {
                 , "https://github.com/example".getBytes()
         );
         mockMvc.perform(multipart("/clone")
-                .file(file)
-                .param("targetDir", "C:\\Users\\example")
-                .param("branch", "master"))
+                        .file(file)
+                        .param("targetDir", "C:\\Users\\example")
+                        .param("branch", "master"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("clone"))
                 .andExpect(model().attribute("error", "txt 파일만 업로드 가능합니다."))
@@ -94,9 +99,9 @@ class GitCloneControllerTest {
                 , "https://github.com/example".getBytes()
         );
         mockMvc.perform(multipart("/clone")
-                .file(file)
-                .param("targetDir", "")
-                .param("branch", "master"))
+                        .file(file)
+                        .param("targetDir", "")
+                        .param("branch", "master"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("clone"))
                 .andExpect(model().attribute("error", "클론할 경로를 입력하세요."))
@@ -119,6 +124,25 @@ class GitCloneControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("clone"))
                 .andExpect(model().attribute("error", "~로 시작하는 경로는 입력할 수 없습니다."))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("targetDir가 존재하지 않으면 에러 메시지를 반환")
+    void gitClone_TargetDirNotExist_Test() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file"
+                , "repos.txt"
+                , "text/plain"
+                , "https://github.com/example".getBytes()
+        );
+        mockMvc.perform(multipart("/clone")
+                        .file(file)
+                        .param("targetDir", "C:\\Users\\example")
+                        .param("branch", "master"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("clone"))
+                .andExpect(model().attribute("error", "입력한 경로가 존재하지 않습니다."))
                 .andDo(print());
     }
 

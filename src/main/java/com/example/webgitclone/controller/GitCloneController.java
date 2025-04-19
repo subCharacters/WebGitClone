@@ -4,25 +4,20 @@ import com.example.webgitclone.service.GitCloneService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.time.LocalDateTime;
 
 @Controller
 public class GitCloneController {
 
-//     private final GitCloneService gitCloneService;
-/*
+    private final GitCloneService gitCloneService;
 
     public GitCloneController(GitCloneService gitCloneService) {
         this.gitCloneService = gitCloneService;
     }
-*/
 
     @PostMapping("/clone")
     public String gitClonePage(
@@ -58,6 +53,12 @@ public class GitCloneController {
 
         if (targetDir.startsWith("~")) {
             model.addAttribute("error", "~로 시작하는 경로는 입력할 수 없습니다.");
+            return "clone";
+        }
+
+        File dir = new File(targetDir);
+        if (!dir.exists() || !dir.isDirectory()) {
+            model.addAttribute("error", "입력한 경로가 존재하지 않습니다.");
             return "clone";
         }
 

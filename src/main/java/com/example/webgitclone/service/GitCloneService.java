@@ -1,24 +1,36 @@
 package com.example.webgitclone.service;
 
+import com.example.webgitclone.dto.GitCloneResult;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class GitCloneService {
 
-    public void gitClone(String srcPath, String destPath) {
+    public List<GitCloneResult> cloneMultiple(List<String> urls, String branch, String targetDir) {
+        List<GitCloneResult> results = new ArrayList<>();
 
-        String branch = "master";
-        String authUrl = "https://github.com/subCharacters/DesignPattern_Java.git";
-        String targetPath = "C:\\work\\test\\";
-        String targetDir = authUrl.substring(authUrl.lastIndexOf("/") + 1).replace(".git", "");
+        for (String url : urls) {
+            String repoName = url.substring(url.lastIndexOf("/") + 1).replace(".git", "");
+            String destDir = targetDir + "/" + repoName;
+            GitCloneResult result = gitClone(url, branch, destDir, repoName);
+            results.add(result);
+        }
+
+        return results;
+    }
+
+    private GitCloneResult gitClone(String url, String branch, String destDir, String repoName) {
+        List<String> logs = new ArrayList<>();
 
         // Git 명령어 구성: git clone -b 브랜치명 URL 대상경로
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "git", "clone", "-b", branch, authUrl, targetPath + targetDir
+                "git", "clone", "-b", branch, url, destDir
         );
 
         // 표준 에러 스트림(stderr)을 표준 출력(stdout)에 합치기
@@ -30,20 +42,27 @@ public class GitCloneService {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println("[GIT] " + line); // Git의 출력 내용을 콘솔에 표시
+                    logs.add(line); // log 담기
                 }
             }
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
-                System.err.println("ExitCode: " + exitCode);
-                System.out.println("Clone Failed");
-                return;
+                logs.add("Exit code: " + exitCode);
+                logs.add(repoName + " Clone Failed");
+                return new GitCloneResult(-1, logs);
+            } else {
+                logs.add("Exit code: " + exitCode);
+                logs.add(repoName + " Clone Successful");
+                return new GitCloneResult(exitCode, logs);
             }
-
-            System.out.println("Clone Successful");
         } catch (IOException | InterruptedException e) {
+            logs.add(repoName + " [EXCEPTION] " + e.getMessage());
             throw new RuntimeException(e);
+        } finally {
+            for (String log : logs) {
+                System.out.println(log);
+            }
         }
     }
 }
