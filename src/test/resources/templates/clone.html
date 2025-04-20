@@ -3,6 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>Git 저장소 클론</title>
+    <script>
+        let socket;
+
+        function startClone() {
+            const branch = document.getElementById("branch").value;
+            const file = document.getElementById("file").files[0];
+            const targetDir = document.getElementById("targetDir").value;
+
+            if (!file || !branch || !targetDir) {
+                alert("모든 항목을 입력하세요.");
+                return;
+            }
+
+            socket = new WebSocket("ws://localhost:8080/ws/clone-logs");
+            socket.onopen = () => {
+                socket.send(JSON.stringify({ branch, targetDir, fileName: file.name }));
+            };
+            socket.onmessage = (event) => {
+                const logArea = document.getElementById("logArea");
+                logArea.value += event.data + "\n";
+                logArea.scrollTop = logArea.scrollHeight;
+            };
+        }
+    </script>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -93,7 +117,8 @@
             <div class="note">Mac의 경우 <code>~/</code> 경로도 지원됩니다</div>
         </div>
 
-        <button type="submit">🚀 클론 시작</button>
+        <button type="button" onclick="startClone()">🚀 클론 시작</button>
+        <textarea id="logArea" rows="15" style="width:100%; margin-top:20px;"></textarea>
     </form>
 </div>
 </body>

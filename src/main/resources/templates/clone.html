@@ -3,6 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <title>Git 저장소 클론</title>
+    <script>
+        let socket;
+
+        function startClone() {
+            const branch = document.getElementById("branch").value;
+            const file = document.getElementById("file").files[0];
+            const targetDir = document.getElementById("targetDir").value;
+
+            if (!file || !branch || !targetDir) {
+                alert("모든 항목을 입력하세요.");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("branch", branch);
+            formData.append("file", file);
+            formData.append("targetDir", targetDir);
+
+            fetch("/clone-check", {
+                method: "POST",
+                body: formData
+            }).then(response => {
+                if (!response.ok) {
+                    return response.text().then(msg => { throw new Error(msg); });
+                }
+                return response.text();
+            }).then(() => {
+                // ✅ 검증 성공 시 WebSocket 연결 시작
+                connectWebSocket(branch, file.name, targetDir);
+            }).catch(error => {
+                alert("⛔ 입력 오류: " + error.message);
+            });
+
+            // WebSocket 연결 생성
+            // socket = new WebSocket("ws://localhost:8080/ws/clone-logs");
+            // socket.onopen = () => {
+            //     socket.send(JSON.stringify({ branch, targetDir, fileName: file.name }));
+            // };
+            // socket.onmessage = (event) => {
+            //     const logContent = document.getElementById("logContent");
+            //     const line = event.data;
+            //
+            //     const logLine = document.createElement("div");
+            //     logLine.classList.add("log-line");
+            //     logLine.textContent = line;
+            //
+            //     logContent.appendChild(logLine);
+            //
+            //     // 자동 스크롤
+            //     logContent.scrollTop = logContent.scrollHeight;
+            // };
+        }
+
+        function connectWebSocket(branch, fileName, targetDir) {
+            const socket = new WebSocket("ws://localhost:8080/ws/clone-logs");
+
+            socket.onopen = () => {
+                socket.send(JSON.stringify({ branch, fileName, targetDir }));
+            };
+
+            socket.onmessage = (event) => {
+                const logLine = document.createElement("div");
+                logLine.classList.add("log-line");
+                logLine.textContent = event.data;
+                document.getElementById("logContent").appendChild(logLine);
+            };
+        }
+    </script>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -72,7 +139,7 @@
 <div class="container">
     <h2>📦 Git 저장소 클론</h2>
 
-    <form method="post" th:action="@{/clone}" enctype="multipart/form-data">
+<!--    <form method="post" th:action="@{/clone}" enctype="multipart/form-data">
         <div>
             <label for="branch">브랜치명</label>
             <input type="text" id="branch" name="branch" required placeholder="예: main, master">
@@ -94,7 +161,57 @@
         </div>
 
         <button type="submit">🚀 클론 시작</button>
-    </form>
+    </form>-->
+    <h2>📦 Git 저장소 클론 (실시간 로그)</h2>
+
+    <!-- 브랜치, 파일, 경로 입력 -->
+    <div>
+        <label for="branch">브랜치명</label>
+        <input type="text" id="branch" required placeholder="예: main, master">
+    </div>
+
+    <div>
+        <label for="file">Git URL 목록 파일 (.txt)</label>
+        <input type="file" id="file" accept=".txt" required>
+        <div class="note">각 줄에 1개의 Git 저장소 URL을 입력하세요</div>
+    </div>
+
+    <div>
+        <label for="targetDir">클론할 대상 경로</label>
+        <input type="text" id="targetDir" required placeholder="예: C:\work 또는 ~/dev">
+        <div class="note">Mac의 경우 <code>~/</code> 경로도 지원됩니다</div>
+    </div>
+
+    <button type="button" onclick="startClone()">🚀 클론 시작</button>
+
+    <!-- 로그 출력 영역 -->
+    <div id="logBox" class="log-box">
+        <div class="log-header">📜 클론 로그</div>
+        <div id="logContent" class="log-content"></div>
+    </div>
+    <style>
+        .log-box {
+            margin-top: 30px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .log-line {
+            margin-bottom: 2px;
+            white-space: pre-wrap;
+        }
+    </style>
 </div>
 </body>
 </html>

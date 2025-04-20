@@ -4,6 +4,7 @@ import com.example.webgitclone.service.GitCloneService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +14,9 @@ import java.io.File;
 @Controller
 public class GitCloneController {
 
-    private final GitCloneService gitCloneService;
-
-    public GitCloneController(GitCloneService gitCloneService) {
-        this.gitCloneService = gitCloneService;
+    @GetMapping("/git-clone")
+    public String gitClonePage() {
+        return "clone";
     }
 
     @PostMapping("/clone")

@@ -1,0 +1,3 @@
+https://github.com/subCharacters/DesignPattern_Java.git
+https://github.com/subCharacters/SpringBatch5_Example.git
+https://github.com/subCharacters/SpringBootDB_Connect.git

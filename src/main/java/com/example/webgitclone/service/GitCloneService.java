@@ -1,16 +1,27 @@
 package com.example.webgitclone.service;
 
 import com.example.webgitclone.dto.GitCloneResult;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class GitCloneService {
+
+    private final GitCloneExecutor gitCloneExecutor;
+
+    public GitCloneService() {
+        this.gitCloneExecutor = this::gitClone;
+    }
+
+    public GitCloneService(GitCloneExecutor gitCloneExecutor) {
+        this.gitCloneExecutor = gitCloneExecutor;
+    }
 
     public List<GitCloneResult> cloneMultiple(List<String> urls, String branch, String targetDir) {
         List<GitCloneResult> results = new ArrayList<>();
@@ -18,11 +29,20 @@ public class GitCloneService {
         for (String url : urls) {
             String repoName = url.substring(url.lastIndexOf("/") + 1).replace(".git", "");
             String destDir = targetDir + "/" + repoName;
-            GitCloneResult result = gitClone(url, branch, destDir, repoName);
+            // GitCloneResult result = gitClone(url, branch, destDir, repoName);
+            GitCloneResult result = gitCloneExecutor.execute(url, branch, destDir, repoName);
             results.add(result);
         }
 
         return results;
+    }
+
+    public GitCloneResult cloneSingle(String url, String branch, String targetDir) {
+        String repoName = url.substring(url.lastIndexOf("/") + 1).replace(".git", "");
+        String destDir = targetDir + "/" + repoName;
+        GitCloneResult result = gitCloneExecutor.execute(url, branch, destDir, repoName);
+
+        return result;
     }
 
     private GitCloneResult gitClone(String url, String branch, String destDir, String repoName) {
@@ -56,12 +76,12 @@ public class GitCloneService {
                 logs.add(repoName + " Clone Successful");
                 return new GitCloneResult(exitCode, logs);
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             logs.add(repoName + " [EXCEPTION] " + e.getMessage());
-            throw new RuntimeException(e);
+            return new GitCloneResult(-1, logs);
         } finally {
-            for (String log : logs) {
-                System.out.println(log);
+            for (String logStr : logs) {
+                log.info(logStr);
             }
         }
     }
